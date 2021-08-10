@@ -35,6 +35,8 @@ func Example() {
 // This example test isn't really needed, but it keeps the file
 // from being an example program, so we can replace the http
 // transport etc.
+
+// Set a custom check frequency of 24 hours.
 func Example_customFrequency() {
 	ctx := context.Background()
 	fut := whatsnew.Check(ctx, &whatsnew.Options{
