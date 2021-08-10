@@ -60,9 +60,8 @@ type Options struct {
 	Frequency time.Duration
 
 	// Slots to override cacher and Releaser
-	// TODO: make these public
-	cacher   impl.Cacher
-	releaser impl.Releaser
+	Cacher   impl.Cacher   // If provided, Cache is ignored.
+	Releaser impl.Releaser // If provided, Slug is ignored.
 }
 
 /* TODO: prerelease flags
@@ -81,10 +80,15 @@ const (
 */
 
 func (o *Options) resolve() error {
-	// TODO: don't overwrite if provided.
 	// TODO: error if strings + impls are provided.
-	o.cacher = &impl.FileCacher{Path: o.Cache}
-	o.releaser = &impl.GitHubReleaser{URL: fmt.Sprintf("https://api.github.com/repos/%s/releases", o.Slug)}
+
+	if o.Cacher == nil {
+		o.Cacher = &impl.FileCacher{Path: o.Cache}
+	}
+
+	if o.Releaser == nil {
+		o.Releaser = &impl.GitHubReleaser{URL: fmt.Sprintf("https://api.github.com/repos/%s/releases", o.Slug)}
+	}
 
 	if o.Frequency == 0 {
 		o.Frequency = DefaultFrequency
@@ -119,7 +123,7 @@ func doWork(ctx context.Context, opts *Options) (string, error) {
 		return "", err
 	}
 
-	i, err := opts.cacher.Get(ctx)
+	i, err := opts.Cacher.Get(ctx)
 	if err != nil {
 		i = &impl.Info{}
 	}
@@ -132,7 +136,7 @@ func doWork(ctx context.Context, opts *Options) (string, error) {
 			nextVer = i.Version
 		}
 	} else {
-		rels, etag, err := opts.releaser.Get(ctx, i.Etag)
+		rels, etag, err := opts.Releaser.Get(ctx, i.Etag)
 		// If we error, fall back to possibly using the value from the store
 		if err != nil || len(rels) == 0 {
 			if cmp(nextVer, i.Version) < 0 {
@@ -157,7 +161,7 @@ func doWork(ctx context.Context, opts *Options) (string, error) {
 			nextVer = newVer
 		}
 
-		_ = opts.cacher.Set(ctx, &impl.Info{
+		_ = opts.Cacher.Set(ctx, &impl.Info{
 			CheckTime: now,
 			Etag:      etag,
 			Version:   newVer, // we store the latest from the remote ignoring whats installed.
