@@ -14,7 +14,8 @@ import (
 
 // GitHubReleaser is the default Releaser used in whatsnew.
 type GitHubReleaser struct {
-	URL string // a complete URL to the releases API.
+	URL    string       // a complete URL to the releases API.
+	Client *http.Client // if not set, http.DefaultClient is used.
 }
 
 // Get a list of releases.
@@ -35,9 +36,13 @@ func (g *GitHubReleaser) Get(ctx context.Context, etag string) ([]Release, strin
 
 	req = req.WithContext(ctx)
 
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
+	c := g.Client
+	if c == nil {
+		c = http.DefaultClient
+	}
 
+	resp, err := c.Do(req)
+	if err != nil {
 		return nil, "", err
 	}
 	defer resp.Body.Close()
