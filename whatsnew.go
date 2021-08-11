@@ -26,6 +26,13 @@ import (
 // releases if no override is given. It is one week.
 const DefaultFrequency = 7 * 24 * time.Hour
 
+// Timeout values used as options to Check, controlling how long the
+// Check is allowed to run.
+const (
+	DefaultTimeout = 5 * time.Second
+	NoTimeout      = time.Duration(-1)
+)
+
 type result struct {
 	v   string
 	err error
@@ -56,8 +63,16 @@ type Options struct {
 	Cache   string // A full file path to store the cache. Should end in `.json`
 	Version string // The current semver version of the program to check.
 
-	// Optional. if not provided DefaultFrequency is used.
+	// Optional. Controls how often to run a release check.
+	// If not provided, DefaultFrequency is used.
 	Frequency time.Duration
+
+	// Optional. Sets a maximum duration to run the check before
+	// timing out and returning either the cached value, or no update.
+	// If not provided, DefaultTimeout is used. Set to NoTimeout (-1)
+	// to disable the timeout. Context cancelation is honored, so you
+	// may further restrict the deadline with the provided context.
+	Timeout time.Duration
 
 	// Slots to override cacher and Releaser
 	Cacher   impl.Cacher   // If provided, Cache is ignored.
@@ -94,6 +109,10 @@ func (o *Options) resolve() error {
 		o.Frequency = DefaultFrequency
 	}
 
+	if o.Timeout == 0 {
+		o.Timeout = DefaultTimeout
+	}
+
 	return nil
 }
 
@@ -121,6 +140,12 @@ func Check(ctx context.Context, opts *Options) *Future {
 func doWork(ctx context.Context, opts *Options) (string, error) {
 	if err := opts.resolve(); err != nil {
 		return "", err
+	}
+
+	if opts.Timeout > 0 {
+		var cancel func()
+		ctx, cancel = context.WithTimeout(ctx, opts.Timeout)
+		defer cancel()
 	}
 
 	i, err := opts.Cacher.Get(ctx)
