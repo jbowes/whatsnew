@@ -132,43 +132,50 @@ func doWork(ctx context.Context, opts *Options) (string, error) {
 
 	nextVer := opts.Version
 	if now.Sub(i.CheckTime) < opts.Frequency {
-		if cmp(nextVer, i.Version) < 0 {
-			nextVer = i.Version
-		}
+		nextVer = i.Version
 	} else {
 		rels, etag, err := opts.Releaser.Get(ctx, i.Etag)
-		// If we error, fall back to possibly using the value from the store
-		if err != nil || len(rels) == 0 {
-			if cmp(nextVer, i.Version) < 0 {
-				return i.Version, nil
-			}
-		}
-		// find the biggest non-prerelease version in releases.
-		// TODO: could look at more than the first page. would only matter
-		// for concurrent patch releases etc.
-		var newVer string
-		for _, rel := range rels {
-			switch {
-			case rel.Draft:
-			case !isValid(rel.TagName):
-			case rel.Prerelease || isPrerelease(rel.TagName):
-			case cmp(newVer, rel.TagName) < 0:
-				newVer = rel.TagName
-			}
-		}
+		if err != nil {
+			// If we error, fall back to possibly using the value from the store
+			nextVer = i.Version
+		} else if len(rels) == 0 {
+			// Cached result. refresh the checktime and store.
+			_ = opts.Cacher.Set(ctx, &impl.Info{
+				CheckTime: now,
+				Etag:      etag,
+				Version:   i.Version,
+			})
 
-		if cmp(nextVer, newVer) < 1 {
-			nextVer = newVer
-		}
+			nextVer = i.Version
+		} else {
+			// find the biggest non-prerelease version in releases.
+			// TODO: could look at more than the first page. would only matter
+			// for concurrent patch releases etc.
+			var newVer string
+			for _, rel := range rels {
+				switch {
+				case rel.Draft:
+				case !isValid(rel.TagName):
+				case rel.Prerelease || isPrerelease(rel.TagName):
+				case cmp(newVer, rel.TagName) < 0:
+					newVer = rel.TagName
+				}
+			}
 
-		_ = opts.Cacher.Set(ctx, &impl.Info{
-			CheckTime: now,
-			Etag:      etag,
-			Version:   newVer, // we store the latest from the remote ignoring whats installed.
-		})
+			if cmp(nextVer, newVer) < 1 {
+				nextVer = newVer
+			}
+
+			// TODO: make sure newVer is set
+			_ = opts.Cacher.Set(ctx, &impl.Info{
+				CheckTime: now,
+				Etag:      etag,
+				Version:   newVer, // we store the latest from the remote ignoring whats installed.
+			})
+		}
 	}
 
-	if cmp(opts.Version, nextVer) == 0 {
+	if cmp(opts.Version, nextVer) >= 0 {
 		return "", nil
 	}
 
