@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 )
 
 // GitHubReleaser is the default Releaser used in whatsnew.
@@ -29,10 +28,6 @@ func (g *GitHubReleaser) Get(ctx context.Context, etag string) ([]Release, strin
 	if etag != "" {
 		req.Header.Set("If-None-Match", etag)
 	}
-
-	// TODO: configurable timeout? relying on ctx doesn't seem like a great API
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
 
 	req = req.WithContext(ctx)
 
