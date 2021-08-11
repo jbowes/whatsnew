@@ -15,9 +15,10 @@ import (
 
 type testCacher struct {
 	info *impl.Info
+	err  error
 }
 
-func (t *testCacher) Get(context.Context) (*impl.Info, error) { return t.info, nil }
+func (t *testCacher) Get(context.Context) (*impl.Info, error) { return t.info, t.err }
 func (testCacher) Set(context.Context, *impl.Info) error      { return nil }
 
 type testReleaser struct {
@@ -33,7 +34,7 @@ func TestCheck(t *testing.T) {
 	ctx := context.Background()
 	tcs := map[string]struct {
 		releases []impl.Release
-		info     *impl.Info
+		cacheErr error
 		out      string
 	}{
 		"ok": {
@@ -65,13 +66,18 @@ func TestCheck(t *testing.T) {
 			},
 			out: "v1.1.1",
 		},
+		"cacher get err": {
+			releases: []impl.Release{{TagName: "v1.1.1"}},
+			cacheErr: errors.New("oops"),
+			out:      "v1.1.1",
+		},
 	}
 
 	for name, tc := range tcs {
 		t.Run(name, func(t *testing.T) {
 			fut := whatsnew.Check(ctx, &whatsnew.Options{
 				Version:  "v1.0.0",
-				Cacher:   &testCacher{&impl.Info{}},
+				Cacher:   &testCacher{info: &impl.Info{}, err: tc.cacheErr},
 				Releaser: &testReleaser{releases: tc.releases},
 			})
 
@@ -90,7 +96,7 @@ func TestCheck_fallsBackToCacheOnReleaserError(t *testing.T) {
 	ctx := context.Background()
 	fut := whatsnew.Check(ctx, &whatsnew.Options{
 		Version:  "v1.0.0",
-		Cacher:   &testCacher{&impl.Info{Version: "v1.0.1"}},
+		Cacher:   &testCacher{info: &impl.Info{Version: "v1.0.1"}},
 		Releaser: &testReleaser{err: errors.New("oops")},
 	})
 
@@ -107,7 +113,7 @@ func TestRun_isRepeatable(t *testing.T) {
 	ctx := context.Background()
 	fut := whatsnew.Check(ctx, &whatsnew.Options{
 		Version:  "v1.0.0",
-		Cacher:   &testCacher{&impl.Info{}},
+		Cacher:   &testCacher{info: &impl.Info{}},
 		Releaser: &testReleaser{releases: []impl.Release{{TagName: "v1.0.1"}}},
 	})
 
