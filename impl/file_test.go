@@ -57,3 +57,35 @@ func TestFileCacher_roundTrip(t *testing.T) {
 	}
 
 }
+
+func TestFileCacher_errOnWrite(t *testing.T) {
+	ctx := context.Background()
+
+	fc := impl.FileCacher{Path: filepath.Join("/", "test-cache.json")}
+
+	err := fc.Set(ctx, &impl.Info{
+		CheckTime: time.Now(),
+		Version:   "v1.1.2",
+		Etag:      `"some-etag"`,
+	})
+
+	if err == nil {
+		t.Errorf("expected err but go none")
+	}
+}
+
+func TestFileCacher_errOnMkDir(t *testing.T) {
+	ctx := context.Background()
+
+	fc := impl.FileCacher{Path: filepath.Join("/", "whatsnew-test", "test-cache.json")}
+
+	err := fc.Set(ctx, &impl.Info{
+		CheckTime: time.Now(),
+		Version:   "v1.1.2",
+		Etag:      `"some-etag"`,
+	})
+
+	if err == nil {
+		t.Errorf("expected err but go none")
+	}
+}

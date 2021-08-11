@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"path/filepath"
 )
 
 // FileCacher is the default Cacher used in whatsnew.
@@ -31,6 +32,10 @@ func (f *FileCacher) Get(context.Context) (*Info, error) {
 
 // Set cached release Info.
 func (f *FileCacher) Set(_ context.Context, i *Info) error {
+	if err := os.MkdirAll(filepath.Dir(f.Path), 0750); err != nil {
+		return err
+	}
+
 	w, err := os.Create(f.Path)
 	if err != nil {
 		return err
