@@ -21,6 +21,7 @@ func (f *FileCacher) Get(context.Context) (*Info, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer r.Close()
 
 	var i Info
 	dec := json.NewDecoder(r)
@@ -34,6 +35,7 @@ func (f *FileCacher) Set(_ context.Context, i *Info) error {
 	if err != nil {
 		return err
 	}
+	defer w.Close()
 
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")
