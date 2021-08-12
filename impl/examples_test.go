@@ -52,7 +52,7 @@ func (staticReleaser) Get(context.Context, string) ([]impl.Release, string, erro
 func ExampleReleaser_staticReleases() {
 	ctx := context.Background()
 	fut := whatsnew.Check(ctx, &whatsnew.Options{
-		Cache:    "testdata/update-cache.json",
+		Cache:    "../testdata/example-releaser-update-cache.json",
 		Version:  "v0.0.1",
 		Releaser: staticReleaser{}, // Use the custom Releaser
 	})
