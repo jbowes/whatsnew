@@ -8,7 +8,7 @@
 
 <div align="center">
   <a href="https://pkg.go.dev/github.com/jbowes/whatsnew"><img src="https://pkg.go.dev/badge/github.com/jbowes/whatsnew.svg" alt="Go Reference"></a>
-  <img alt="Alpha Quality" src="https://img.shields.io/badge/status-ALPHA-orange.svg" >
+  <img alt="Enterprise Ready" src="https://img.shields.io/badge/Enterprise-Ready-pink.svg" >
   <a href="https://github.com/jbowes/whatsnew/releases/latest"><img alt="GitHub tag" src="https://img.shields.io/github/tag/jbowes/whatsnew.svg"></a>
   <a href="https://github.com/jbowes/whatsnew/actions/workflows/go.yml"><img alt="Build Status" src="https://github.com/jbowes/whatsnew/actions/workflows/go.yml/badge.svg?branch=main"></a>
   <a href="./LICENSE"><img alt="BSD license" src="https://img.shields.io/badge/license-BSD-blue.svg"></a>
@@ -17,9 +17,6 @@
 </div><br /><br />
 
 ---
-
-🚧 ___Disclaimer___: _`whatsnew` is alpha quality software. The API may change
-without warning between revisions._ 🚧
 
 [`whatsnew`][godoc] provides a simple way to check GitHub for new releases of
 your Go application. It saves results between runs, uses etags to speed up responses, and tries to minimize the overhead it adds to an otherwise fast
