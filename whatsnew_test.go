@@ -109,6 +109,36 @@ func TestCheck_fallsBackToCacheOnReleaserError(t *testing.T) {
 	}
 }
 
+func TestCheck_errOnBothCacheOptions(t *testing.T) {
+	ctx := context.Background()
+	fut := whatsnew.Check(ctx, &whatsnew.Options{
+		Version: "v1.0.0",
+		Slug:    "you/your-repo",
+		Cache:   "unused-cache.json",
+		Cacher:  &testCacher{info: &impl.Info{Version: "v1.0.1"}},
+	})
+
+	_, err := fut.Get()
+	if !errors.Is(err, whatsnew.ErrMisconfiguredOptions) {
+		t.Errorf("expected misconfigured error. got: %s", err)
+	}
+}
+
+func TestCheck_errOnBothReleaserOptions(t *testing.T) {
+	ctx := context.Background()
+	fut := whatsnew.Check(ctx, &whatsnew.Options{
+		Version:  "v1.0.0",
+		Cache:    "unused-cache.json",
+		Slug:     "unused/slug",
+		Releaser: &testReleaser{err: errors.New("oops")},
+	})
+
+	_, err := fut.Get()
+	if !errors.Is(err, whatsnew.ErrMisconfiguredOptions) {
+		t.Errorf("expected misconfigured error. got: %s", err)
+	}
+}
+
 func TestRun_isRepeatable(t *testing.T) {
 	ctx := context.Background()
 	fut := whatsnew.Check(ctx, &whatsnew.Options{
