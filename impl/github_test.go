@@ -73,3 +73,16 @@ func TestGihubReleaser_errorOnRequest(t *testing.T) {
 		t.Error("expected error but got none")
 	}
 }
+
+func TestGihubReleaser_errorOnBadURL(t *testing.T) {
+	ctx := context.Background()
+	ghr := &impl.GitHubReleaser{
+		// This test case is really stretching it, but those coverage
+		// metrics are just so enticing
+		URL: "\x7f",
+	}
+	_, _, err := ghr.Get(ctx, `"some-etag"`)
+	if err == nil {
+		t.Error("expected error but got none")
+	}
+}
