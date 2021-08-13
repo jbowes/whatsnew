@@ -19,7 +19,7 @@ type GitHubReleaser struct {
 
 // Get a list of releases.
 func (g *GitHubReleaser) Get(ctx context.Context, etag string) ([]Release, string, error) {
-	req, err := http.NewRequest(http.MethodGet, g.URL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, g.URL, nil)
 	if err != nil {
 		return nil, "", err
 	}
@@ -28,8 +28,6 @@ func (g *GitHubReleaser) Get(ctx context.Context, etag string) ([]Release, strin
 	if etag != "" {
 		req.Header.Set("If-None-Match", etag)
 	}
-
-	req = req.WithContext(ctx)
 
 	c := g.Client
 	if c == nil {
