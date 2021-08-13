@@ -86,3 +86,19 @@ func TestGihubReleaser_errorOnBadURL(t *testing.T) {
 		t.Error("expected error but got none")
 	}
 }
+
+func TestGihubReleaser_errorOnBadJSON(t *testing.T) {
+	ctx := context.Background()
+	ghr := &impl.GitHubReleaser{
+		URL: "http://github.com/repos/you/your-app/bad-json",
+		Client: &http.Client{
+			Transport: http.NewFileTransport(
+				http.Dir("../testdata/example"),
+			),
+		},
+	}
+	_, _, err := ghr.Get(ctx, `"some-etag"`)
+	if err == nil {
+		t.Error("expected error but got none")
+	}
+}
