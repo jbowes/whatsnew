@@ -23,8 +23,8 @@ import (
 	"github.com/jbowes/whatsnew/impl"
 )
 
-// Returned when incompatible options are set. You must use `errors.Is`
-// to check for this error.
+// ErrMisconfiguredOptions is returned when incompatible options are set.
+// You must use `errors.Is` to check for this error.
 var ErrMisconfiguredOptions = errors.New("invalid options provided")
 
 // DefaultFrequency is the default frequency used to check for new
