@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"time"
 
-	"golang.org/x/mod/semver"
+	"github.com/jbowes/semver"
 
 	"github.com/jbowes/whatsnew/impl"
 )
@@ -163,17 +163,22 @@ func doWork(ctx context.Context, opts *Options) (string, error) {
 	if err != nil {
 		i = &impl.Info{}
 	}
+	iHasV, iVer, _ := parseV(i.Version)
 
 	now := time.Now()
 
-	nextVer := opts.Version
+	optHasV, optVer, _ := parseV(opts.Version)
+	nextVer := optVer
+	nextHasV := optHasV
 	if now.Sub(i.CheckTime) < opts.Frequency {
-		nextVer = i.Version
+		nextVer = iVer
+		nextHasV = iHasV
 	} else {
 		rels, etag, err := opts.Releaser.Get(ctx, i.Etag)
 		if err != nil {
 			// If we error, fall back to possibly using the value from the store
-			nextVer = i.Version
+			nextVer = iVer
+			nextHasV = iHasV
 		} else if len(rels) == 0 {
 			// Cached result. refresh the checktime and store.
 			_ = opts.Cacher.Set(ctx, &impl.Info{
@@ -182,57 +187,56 @@ func doWork(ctx context.Context, opts *Options) (string, error) {
 				Version:   i.Version,
 			})
 
-			nextVer = i.Version
+			nextVer = iVer
+			nextHasV = iHasV
 		} else {
 			// find the biggest non-prerelease version in releases.
 			// TODO: could look at more than the first page. would only matter
 			// for concurrent patch releases etc.
-			var newVer string
+			var newVer *semver.Version
+			newHasV := ""
 			for _, rel := range rels {
+				hv, pv, err := parseV(rel.TagName)
 				switch {
+				case err != nil: // not a valid semver tag
 				case rel.Draft:
-				case !isValid(rel.TagName):
-				case rel.Prerelease || isPrerelease(rel.TagName):
-				case cmp(newVer, rel.TagName) < 0:
-					newVer = rel.TagName
+				case rel.Prerelease || pv.Prerelease() != "":
+				case newVer.Compare(pv) < 0:
+					newVer = pv
+					newHasV = hv
 				}
-			}
-
-			if cmp(nextVer, newVer) < 1 {
-				nextVer = newVer
 			}
 
 			// TODO: make sure newVer is set
 			_ = opts.Cacher.Set(ctx, &impl.Info{
 				CheckTime: now,
 				Etag:      etag,
-				Version:   newVer, // we store the latest from the remote ignoring whats installed.
+				Version:   newHasV + newVer.String(), // we store the latest from the remote ignoring what's installed.
 			})
+
+			if nextVer.Compare(newVer) < 1 {
+				nextVer = newVer
+				nextHasV = newHasV
+			}
 		}
 	}
 
-	if cmp(opts.Version, nextVer) >= 0 {
+	if optVer.Compare(nextVer) >= 0 {
 		return "", nil
 	}
 
-	return nextVer, nil
+	return nextHasV + nextVer.String(), nil
 }
 
-// cmp is like x/mod/semver except it allows versions to not start with a v.
-func cmp(v1, v2 string) int {
-	v1 = maybeV(v1)
-	v2 = maybeV(v2)
-
-	return semver.Compare(v1, v2)
-}
-
-func isValid(v1 string) bool      { return semver.IsValid(maybeV(v1)) }
-func isPrerelease(v1 string) bool { return semver.Prerelease(maybeV(v1)) != "" }
-
-func maybeV(v string) string {
-	if v != "" && v[0] != 'v' {
-		return "v" + v
+func parseV(s string) (string, *semver.Version, error) {
+	// TODO: parsing out the v and holding it isn't great.
+	hasV := ""
+	if s != "" && s[0] == 'v' {
+		hasV = "v"
+		s = s[1:]
 	}
 
-	return v
+	v, err := semver.Parse(s)
+
+	return hasV, v, err
 }
