@@ -66,6 +66,14 @@ func TestCheck(t *testing.T) {
 			},
 			out: "v1.1.1",
 		},
+		"no v prefix allowed": {
+			releases: []impl.Release{
+				{TagName: "v1.0.1"},
+				{TagName: "1.1.1"},
+				{TagName: "1.0.2"},
+			},
+			out: "1.1.1",
+		},
 		"cacher get err": {
 			releases: []impl.Release{{TagName: "v1.1.1"}},
 			cacheErr: errors.New("oops"),
