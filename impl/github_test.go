@@ -102,3 +102,37 @@ func TestGihubReleaser_errorOnBadJSON(t *testing.T) {
 		t.Error("expected error but got none")
 	}
 }
+
+type etagTransport struct{}
+
+func (etagTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	if r.Header.Get("If-None-Match") != `"some-etag"` {
+		return nil, errors.New("expected etag")
+	}
+
+	resp := &http.Response{
+		StatusCode: http.StatusNotModified,
+	}
+	return resp, nil
+}
+
+func TestGihubReleaser_supportsEtag(t *testing.T) {
+	ctx := context.Background()
+	ghr := &impl.GitHubReleaser{
+		URL: "http://github.com/repos/you/your-app/releases",
+		Client: &http.Client{
+			Transport: etagTransport{},
+		},
+	}
+	etag := `"some-etag"`
+	rels, outEtag, err := ghr.Get(ctx, etag)
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
+	if len(rels) != 0 {
+		t.Error("expected no rels but got some")
+	}
+	if outEtag != etag {
+		t.Error("incorrect etag. wanted:", etag, "got:", outEtag)
+	}
+}
