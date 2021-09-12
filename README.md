@@ -22,8 +22,8 @@
 your Go application. It saves results between runs, uses etags to speed up responses, and tries to minimize the overhead it adds to an otherwise fast
 application CLI run.
 
-If caching to disk, or reading from GitHub don't work for you, you can
-customize the behaviour.
+If caching to disk or reading from GitHub don't work for you, you can
+[customize the behaviour][impl].
 
 ## Quick start
 
@@ -76,6 +76,7 @@ I would love your help!
 - Letting [me] know if you're using `whatsnew`.
 
 [godoc]: https://pkg.go.dev/github.com/jbowes/whatsnew
+[impl]: https://pkg.go.dev/github.com/jbowes/whatsnew/impl
 
 [issues]: ./issues
 [bug]: ./issues/new?labels=bug
